@@ -11,9 +11,14 @@ import {
   Dimensions,
   PanResponder,
   BackHandler,
+  TextInput,
+  FlatList,
 } from 'react-native';
 import { Stop, DepartureResponse, Route } from '../types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import tripGoService from '../services/tripgo';
+import type { TripGoTrip, TripGoSegment } from '../services/tripgo';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.link';
@@ -83,6 +88,46 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   );
 };
 
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m`;
+  }
+  return `${minutes}m`;
+};
+
+const getModeIcon = (mode: string): any => {
+  if (mode.includes('walk')) return 'walk';
+  if (mode.includes('bus')) return 'bus';
+  if (mode.includes('train') || mode.includes('rail')) return 'train';
+  if (mode.includes('ferry')) return 'boat';
+  if (mode.includes('car')) return 'car';
+  if (mode.includes('bicycle')) return 'bicycle';
+  return 'navigate';
+};
+
+const getModeColor = (mode: string): string => {
+  if (mode.includes('walk')) return '#4CAF50';
+  if (mode.includes('bus')) return '#2196F3';
+  if (mode.includes('train') || mode.includes('rail')) return '#9C27B0';
+  if (mode.includes('ferry')) return '#00BCD4';
+  if (mode.includes('car')) return '#607D8B';
+  if (mode.includes('bicycle')) return '#FF9800';
+  return '#757575';
+};
+
 export const DeparturesModal: React.FC<DeparturesModalProps> = ({
   stop,
   departures,
@@ -96,6 +141,15 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Trip planning states
+  const [showTripPlanning, setShowTripPlanning] = useState(false);
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState<any>(null);
+  const [tripResults, setTripResults] = useState<Array<{ trip: TripGoTrip; segments: TripGoSegment[] }>>([]);
+  const [planningTrip, setPlanningTrip] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
@@ -153,6 +207,61 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
     })
   ).current;
 
+  const searchDestinations = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await tripGoService.searchLocations(query, {
+        lat: stop?.stop_lat || 0,
+        lng: stop?.stop_lon || 0,
+      });
+      setSearchResults(results.choices || []);
+    } catch (error) {
+      console.error('Error searching destinations:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [stop]);
+
+  const planTrip = useCallback(async () => {
+    if (!stop || !selectedDestination) return;
+
+    setPlanningTrip(true);
+    setTripResults([]);
+
+    try {
+      const routingResponse = await tripGoService.calculateRoute(
+        {
+          lat: stop.stop_lat,
+          lng: stop.stop_lon,
+          name: stop.stop_name,
+        },
+        {
+          lat: selectedDestination.lat,
+          lng: selectedDestination.lng,
+          name: selectedDestination.name,
+        },
+        {
+          departAfter: Math.floor(Date.now() / 1000),
+          modes: ['pt_pub'],
+          bestOnly: false,
+        }
+      );
+
+      const processedTrips = tripGoService.processRoutingResponse(routingResponse);
+      setTripResults(processedTrips);
+    } catch (error) {
+      console.error('Error planning trip:', error);
+    } finally {
+      setPlanningTrip(false);
+    }
+  }, [stop, selectedDestination]);
+
   const closeModal = useCallback(() => {
     Animated.timing(slideAnim, {
       toValue: SCREEN_HEIGHT,
@@ -160,6 +269,12 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
       useNativeDriver: true,
     }).start(() => {
       onClose();
+      // Reset trip planning states
+      setShowTripPlanning(false);
+      setDestinationSearch('');
+      setSearchResults([]);
+      setSelectedDestination(null);
+      setTripResults([]);
     });
   }, [onClose, slideAnim]);
 
@@ -308,6 +423,31 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
               </View>
             )}
           </View>
+          <View style={styles.headerButtons}>
+            {showTripPlanning && (
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  setShowTripPlanning(false);
+                  setDestinationSearch('');
+                  setSearchResults([]);
+                  setSelectedDestination(null);
+                  setTripResults([]);
+                }}
+              >
+                <Ionicons name="arrow-back" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            )}
+            {!showTripPlanning && (
+              <TouchableOpacity
+                style={styles.goButton}
+                onPress={() => setShowTripPlanning(true)}
+              >
+                <Text style={styles.goButtonText}>Go</Text>
+                <Ionicons name="arrow-forward" size={16} color="white" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={styles.routesSection}>
@@ -328,7 +468,140 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isDragging}
         >
-          {loading ? (
+          {showTripPlanning ? (
+            <View style={styles.tripPlanningContent}>
+              <View style={styles.searchSection}>
+                <Text style={styles.searchTitle}>Where do you want to go?</Text>
+                <View style={styles.searchInputContainer}>
+                  <Ionicons name="search" size={20} color="#6B7280" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search for a destination..."
+                    value={destinationSearch}
+                    onChangeText={(text) => {
+                      setDestinationSearch(text);
+                      searchDestinations(text);
+                    }}
+                    autoFocus
+                  />
+                </View>
+              </View>
+
+              {selectedDestination && (
+                <View style={styles.selectedDestination}>
+                  <View style={styles.selectedDestinationInfo}>
+                    <Ionicons name="location" size={20} color="#007AFF" />
+                    <Text style={styles.selectedDestinationText}>
+                      {selectedDestination.name}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.planTripButton}
+                    onPress={planTrip}
+                  >
+                    <Text style={styles.planTripButtonText}>Plan Trip</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {isSearching ? (
+                <ActivityIndicator style={styles.searchLoader} size="small" color="#007AFF" />
+              ) : (
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item, index) => `${item.lat}-${item.lng}-${index}`}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.searchResultItem}
+                      onPress={() => {
+                        setSelectedDestination(item);
+                        setDestinationSearch(item.name);
+                        setSearchResults([]);
+                      }}
+                    >
+                      <View style={styles.searchResultIcon}>
+                        <Ionicons 
+                          name={item.stopCode ? 'bus' : 'location'} 
+                          size={20} 
+                          color="#6B7280" 
+                        />
+                      </View>
+                      <View style={styles.searchResultText}>
+                        <Text style={styles.searchResultName}>{item.name}</Text>
+                        {item.address && (
+                          <Text style={styles.searchResultAddress}>{item.address}</Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+
+              {planningTrip ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loadingText}>Planning your trip...</Text>
+                </View>
+              ) : tripResults.length > 0 ? (
+                <View style={styles.tripResults}>
+                  <Text style={styles.tripResultsTitle}>Trip Options</Text>
+                  {tripResults.map((tripData, index) => {
+                    const { trip, segments } = tripData;
+                    const duration = trip.arrive - trip.depart;
+
+                    return (
+                      <View key={index} style={styles.tripOption}>
+                        <View style={styles.tripHeader}>
+                          <View>
+                            <Text style={styles.tripTime}>
+                              {formatTime(trip.depart)} - {formatTime(trip.arrive)}
+                            </Text>
+                            <Text style={styles.tripDuration}>{formatDuration(duration)}</Text>
+                          </View>
+                          {trip.carbon && (
+                            <Text style={styles.carbonText}>
+                              {(trip.carbon / 1000).toFixed(1)} kg CO₂
+                            </Text>
+                          )}
+                        </View>
+
+                        <View style={styles.segmentsContainer}>
+                          {segments.map((segment, idx) => (
+                            <View key={idx} style={styles.segment}>
+                              <View style={[
+                                styles.segmentLine,
+                                { backgroundColor: getModeColor(segment.mode) }
+                              ]} />
+                              <View style={styles.segmentContent}>
+                                <View style={[
+                                  styles.modeIcon,
+                                  { backgroundColor: getModeColor(segment.mode) }
+                                ]}>
+                                  <Ionicons 
+                                    name={getModeIcon(segment.mode)} 
+                                    size={16} 
+                                    color="white" 
+                                  />
+                                </View>
+                                <Text style={styles.segmentText} numberOfLines={1}>
+                                  {segment.action}
+                                </Text>
+                                {segment.duration && (
+                                  <Text style={styles.segmentDuration}>
+                                    {Math.round(segment.duration / 60)} min
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
+          ) : loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#6b46c1" />
               <Text style={styles.loadingText}>Loading departures...</Text>
@@ -462,6 +735,31 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backButton: {
+    backgroundColor: '#EBF8FF',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  goButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  goButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Figtree_600SemiBold',
   },
   stopName: {
     fontSize: 24,
@@ -622,6 +920,184 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontFamily: 'Figtree_500Medium',
+    color: '#9CA3AF',
+  },
+  tripPlanningContent: {
+    flex: 1,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  searchTitle: {
+    fontSize: 18,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontFamily: 'Figtree_400Regular',
+    color: '#111827',
+  },
+  selectedDestination: {
+    backgroundColor: '#EBF8FF',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectedDestinationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  selectedDestinationText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontFamily: 'Figtree_500Medium',
+    color: '#111827',
+    flex: 1,
+  },
+  planTripButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  planTripButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Figtree_600SemiBold',
+  },
+  searchLoader: {
+    marginTop: 40,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  searchResultIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  searchResultText: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontFamily: 'Figtree_500Medium',
+    color: '#111827',
+  },
+  searchResultAddress: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  tripResults: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  tripResultsTitle: {
+    fontSize: 18,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  tripOption: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tripHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tripTime: {
+    fontSize: 16,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+  },
+  tripDuration: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  carbonText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_400Regular',
+    color: '#059669',
+  },
+  segmentsContainer: {
+    gap: 8,
+  },
+  segment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  segmentLine: {
+    width: 3,
+    height: 28,
+    marginRight: 12,
+    borderRadius: 1.5,
+  },
+  segmentContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  segmentText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#374151',
+  },
+  segmentDuration: {
+    fontSize: 12,
+    fontFamily: 'Figtree_400Regular',
     color: '#9CA3AF',
   },
 });

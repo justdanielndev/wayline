@@ -11,7 +11,6 @@ import {
   Dimensions,
   ScrollView,
   Image,
-  Modal,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import * as Location from 'expo-location';
@@ -25,7 +24,6 @@ import { Stop, BikeStation, DepartureResponse } from './src/types';
 import { StopMarker } from './src/components/StopMarker';
 import { BikeMarker } from './src/components/BikeMarker';
 import { DeparturesModal } from './src/components/DeparturesModal';
-import TripPlannerScreen from './src/screens/TripPlannerScreen';
 import { 
   useFonts,
   Figtree_400Regular,
@@ -136,7 +134,6 @@ function MainApp() {
   });
 
   const [showSplash, setShowSplash] = useState(true);
-  const [showTripPlanner, setShowTripPlanner] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [locationPermission, setLocationPermission] = useState<string>('undetermined');
   const [stops, setStops] = useState<Stop[]>([]);
@@ -857,12 +854,6 @@ function MainApp() {
           {showBottomBar && (
             <View style={styles.bottomBar}>
               <TouchableOpacity
-                style={styles.tripPlannerButton}
-                onPress={() => setShowTripPlanner(true)}
-              >
-                <Ionicons name="navigate" size={24} color="#007AFF" />
-              </TouchableOpacity>
-              <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={openDrawer}
                 style={styles.locationCard}
@@ -1073,20 +1064,6 @@ function MainApp() {
             onClose={() => setSelectedStop(null)}
             providerConfig={providers}
           />
-          
-          <Modal
-            visible={showTripPlanner}
-            animationType="slide"
-            onRequestClose={() => setShowTripPlanner(false)}
-          >
-            <TripPlannerScreen />
-            <TouchableOpacity
-              style={styles.closeTripPlannerButton}
-              onPress={() => setShowTripPlanner(false)}
-            >
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </Modal>
         </>
       )}
     </View>
@@ -1211,38 +1188,6 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 20,
   },
-  tripPlannerButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#6F7081FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1.5,
-    borderColor: '#D4D5EBFF',
-  },
-  closeTripPlannerButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-  },
   stopItem: {
     backgroundColor: 'white',
     borderRadius: 16,
@@ -1265,7 +1210,7 @@ const styles = StyleSheet.create({
   stopDistance: {
     fontSize: 14,
     color: '#64748b',
-    fontWeight: '500',
+    marginRight: 16,
   },
   stopRoutes: {
     flexDirection: 'row',
