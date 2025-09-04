@@ -25,7 +25,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.
 
 interface DeparturesModalProps {
   stop: Stop | null;
-  departures: DepartureResponse | null;
+  departures: DepartureResponse | any;
   loading: boolean;
   isVisible: boolean;
   onClose: () => void;
@@ -142,7 +142,6 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
   const [currentTime, setCurrentTime] = useState(Date.now());
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Trip planning states
   const [showTripPlanning, setShowTripPlanning] = useState(false);
   const [destinationSearch, setDestinationSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -150,6 +149,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
   const [selectedDestination, setSelectedDestination] = useState<any>(null);
   const [tripResults, setTripResults] = useState<Array<{ trip: TripGoTrip; segments: TripGoSegment[] }>>([]);
   const [planningTrip, setPlanningTrip] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<{ trip: TripGoTrip; segments: TripGoSegment[] } | null>(null);
 
   useEffect(() => {
     if (isVisible) {
@@ -262,6 +262,17 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
     }
   }, [stop, selectedDestination]);
 
+  const resetTripPlanningState = useCallback(() => {
+    setShowTripPlanning(false);
+    setDestinationSearch('');
+    setSearchResults([]);
+    setSelectedDestination(null);
+    setTripResults([]);
+    setSelectedTrip(null);
+    setIsSearching(false);
+    setPlanningTrip(false);
+  }, []);
+
   const closeModal = useCallback(() => {
     Animated.timing(slideAnim, {
       toValue: SCREEN_HEIGHT,
@@ -269,14 +280,9 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
       useNativeDriver: true,
     }).start(() => {
       onClose();
-      // Reset trip planning states
-      setShowTripPlanning(false);
-      setDestinationSearch('');
-      setSearchResults([]);
-      setSelectedDestination(null);
-      setTripResults([]);
+      resetTripPlanningState();
     });
-  }, [onClose, slideAnim]);
+  }, [onClose, slideAnim, resetTripPlanningState]);
 
   useEffect(() => {
     if (isVisible) {
@@ -287,8 +293,9 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
       }).start();
     } else {
       slideAnim.setValue(SCREEN_HEIGHT);
+      resetTripPlanningState();
     }
-  }, [isVisible]);
+  }, [isVisible, resetTripPlanningState]);
 
   if (!stop || !isVisible) return null;
 
@@ -340,8 +347,27 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
     );
   };
 
-  const renderDeparture = (departure: any, category: string) => {
-    // @ts-expect-error - error expected
+  interface ExtendedDeparture {
+    departure_time: string;
+    arrival_time?: string;
+    minutes_until?: number | null;
+    minutes_from_now?: number;
+    is_tomorrow?: boolean;
+    trip_id?: string;
+    trip_headsign?: string;
+    realtime?: boolean;
+    schedule_relationship?: string;
+    route?: {
+      route_id?: string;
+      route_short_name: string;
+      route_long_name?: string;
+      route_color?: string;
+      route_type: number;
+      feed_onestop_id?: string;
+    };
+  }
+
+  const renderDeparture = (departure: ExtendedDeparture, category: string) => {
     const serverTime = departures?.server_time || Date.now();
     const timeDiff = currentTime - serverTime;
     const minutesFromNow = Math.max(0, Math.floor((departure.minutes_from_now || 0) - (timeDiff / 60000)));
@@ -350,7 +376,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
     return (
       <View key={`${departure.trip_id}-${departure.departure_time}`} style={styles.departureItem}>
         <View style={styles.departureLeft}>
-          {renderRouteIcon(departure.route, 36)}
+          {departure.route && renderRouteIcon(departure.route as Route, 36)}
           <View style={styles.departureInfo}>
             <Text style={styles.headsign} numberOfLines={1}>
               {departure.trip_headsign || departure.route?.route_long_name || 'Unknown destination'}
@@ -428,11 +454,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={() => {
-                  setShowTripPlanning(false);
-                  setDestinationSearch('');
-                  setSearchResults([]);
-                  setSelectedDestination(null);
-                  setTripResults([]);
+                  resetTripPlanningState();
                 }}
               >
                 <Ionicons name="arrow-back" size={20} color="#007AFF" />
@@ -468,7 +490,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isDragging}
         >
-          {showTripPlanning ? (
+          {showTripPlanning && !selectedTrip ? (
             <View style={styles.tripPlanningContent}>
               <View style={styles.searchSection}>
                 <Text style={styles.searchTitle}>Where do you want to go?</Text>
@@ -550,7 +572,14 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                     const duration = trip.arrive - trip.depart;
 
                     return (
-                      <View key={index} style={styles.tripOption}>
+                      <TouchableOpacity 
+                        key={index} 
+                        style={styles.tripOption}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setSelectedTrip({ trip, segments });
+                        }}
+                      >
                         <View style={styles.tripHeader}>
                           <View>
                             <Text style={styles.tripTime}>
@@ -595,37 +624,128 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                             </View>
                           ))}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
               ) : null}
             </View>
-          ) : loading ? (
+          ) : showTripPlanning && selectedTrip ? (
+                <View style={styles.tripDetails}>
+                  <View style={styles.tripDetailsHeader}>
+                    <TouchableOpacity
+                      style={styles.backToTripsButton}
+                      onPress={() => setSelectedTrip(null)}
+                    >
+                      <Ionicons name="arrow-back" size={20} color="#007AFF" />
+                      <Text style={styles.backToTripsText}>Back to trips</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <Text style={styles.tripDetailsTitle}>Trip Details</Text>
+                  
+                  <View style={styles.tripSummary}>
+                    <View style={styles.tripSummaryTimes}>
+                      <Text style={styles.tripDetailTime}>
+                        {formatTime(selectedTrip.trip.depart)}
+                      </Text>
+                      <Ionicons name="arrow-forward" size={16} color="#6B7280" style={{ marginHorizontal: 8 }} />
+                      <Text style={styles.tripDetailTime}>
+                        {formatTime(selectedTrip.trip.arrive)}
+                      </Text>
+                    </View>
+                    <Text style={styles.tripDetailDuration}>
+                      {formatDuration(selectedTrip.trip.arrive - selectedTrip.trip.depart)}
+                    </Text>
+                    {selectedTrip.trip.carbon && (
+                      <Text style={styles.tripDetailCarbon}>
+                        {(selectedTrip.trip.carbon / 1000).toFixed(1)} kg CO₂
+                      </Text>
+                    )}
+                  </View>
+                  
+                  <ScrollView style={styles.directionsContainer}>
+                    <Text style={styles.directionsTitle}>Directions</Text>
+                    {selectedTrip.segments.map((segment, idx) => (
+                      <View key={idx} style={styles.directionStep}>
+                        <View style={styles.directionStepHeader}>
+                          <View style={[
+                            styles.directionIcon,
+                            { backgroundColor: getModeColor(segment.mode) }
+                          ]}>
+                            <Ionicons 
+                              name={getModeIcon(segment.mode)} 
+                              size={20} 
+                              color="white" 
+                            />
+                          </View>
+                          <View style={styles.directionStepInfo}>
+                            <Text style={styles.directionAction}>{segment.action}</Text>
+                            <View style={styles.directionTimesRow}>
+                              <Text style={styles.directionTime}>
+                                {formatTime(segment.startTime)}
+                              </Text>
+                              {segment.duration && (
+                                <>
+                                  <Text style={styles.directionDuration}>
+                                    ({Math.round(segment.duration / 60)} min)
+                                  </Text>
+                                  <Text style={styles.directionTime}>
+                                    → {formatTime(segment.endTime)}
+                                  </Text>
+                                </>
+                              )}
+                            </View>
+                            {segment.from && segment.to && (
+                              <Text style={styles.directionLocations}>
+                                From: {segment.from.name || 'Unknown'}
+                                {segment.to.name && ` → To: ${segment.to.name}`}
+                              </Text>
+                            )}
+                            {segment.modeInfo?.alt && (
+                              <Text style={styles.directionModeInfo}>
+                                {segment.modeInfo.alt}
+                              </Text>
+                            )}
+                            {segment.metres && (
+                              <Text style={styles.directionDistance}>
+                                {segment.metres < 1000 
+                                  ? `${segment.metres}m` 
+                                  : `${(segment.metres / 1000).toFixed(1)}km`
+                                }
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+          ) : !showTripPlanning && loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#6b46c1" />
               <Text style={styles.loadingText}>Loading departures...</Text>
             </View>
-          ) : departures ? (
+          ) : !showTripPlanning && departures ? (
             <>
               {(() => {
-                // @ts-expect-error - error expected
                 const serverTime = departures.server_time || Date.now();
                 const timeDiff = currentTime - serverTime;
+                const departureData = departures.departures || {};
                 const allDepartures = [
-                  ...(departures.departures?.past || []),
-                  ...(departures.departures?.upcoming || []),
-                  ...(departures.departures?.later || [])
+                  ...(Array.isArray(departureData.past) ? departureData.past : []),
+                  ...(Array.isArray(departureData.upcoming) ? departureData.upcoming : []),
+                  ...(Array.isArray(departureData.later) ? departureData.later : [])
                 ];
                 
                 const recategorized = {
-                  past: [] as any[],
-                  upcoming: [] as any[],
-                  later: [] as any[]
+                  past: [] as ExtendedDeparture[],
+                  upcoming: [] as ExtendedDeparture[],
+                  later: [] as ExtendedDeparture[]
                 };
                 
-                allDepartures.forEach(dep => {
-                  const adjustedMinutes = Math.floor((dep.minutes_from_now || 0) - (timeDiff / 60000));
+                allDepartures.forEach((dep: ExtendedDeparture) => {
+                  const adjustedMinutes = Math.floor((dep.minutes_from_now || dep.minutes_until || 0) - (timeDiff / 60000));
                   if (adjustedMinutes < 0) {
                     recategorized.past.push({ ...dep, minutes_from_now: adjustedMinutes });
                   } else if (recategorized.upcoming.length < 5) {
@@ -642,7 +762,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
               {recategorized.past.length > 0 && (
                 <CollapsibleSection 
                   title="Previous" 
-                  count={departures.departures.past.length}
+                  count={recategorized.past.length}
                   defaultExpanded={false}
                 >
                   {recategorized.past.map((dep) => renderDeparture(dep, 'past'))}
@@ -1099,5 +1219,136 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Figtree_400Regular',
     color: '#9CA3AF',
+  },
+  tripDetails: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  tripDetailsHeader: {
+    marginBottom: 16,
+  },
+  backToTripsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backToTripsText: {
+    fontSize: 16,
+    fontFamily: 'Figtree_500Medium',
+    color: '#007AFF',
+  },
+  tripDetailsTitle: {
+    fontSize: 20,
+    fontFamily: 'Figtree_700Bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  tripSummary: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tripSummaryTimes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tripDetailTime: {
+    fontSize: 18,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+  },
+  tripDetailDuration: {
+    fontSize: 16,
+    fontFamily: 'Figtree_500Medium',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  tripDetailCarbon: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#059669',
+  },
+  directionsContainer: {
+    flex: 1,
+  },
+  directionsTitle: {
+    fontSize: 18,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  directionStep: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  directionStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  directionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  directionStepInfo: {
+    flex: 1,
+  },
+  directionAction: {
+    fontSize: 16,
+    fontFamily: 'Figtree_600SemiBold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  directionTimesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  directionTime: {
+    fontSize: 14,
+    fontFamily: 'Figtree_500Medium',
+    color: '#374151',
+  },
+  directionDuration: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#6B7280',
+  },
+  directionLocations: {
+    fontSize: 13,
+    fontFamily: 'Figtree_400Regular',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  directionModeInfo: {
+    fontSize: 13,
+    fontFamily: 'Figtree_400Regular',
+    color: '#6B7280',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  directionDistance: {
+    fontSize: 13,
+    fontFamily: 'Figtree_500Medium',
+    color: '#374151',
+    marginTop: 4,
   },
 });

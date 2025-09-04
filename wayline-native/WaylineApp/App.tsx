@@ -143,7 +143,7 @@ function MainApp() {
   const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
   const [departures, setDepartures] = useState<DepartureResponse | null>(null);
   const [departuresLoading, setDeparturesLoading] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([-0.3763, 39.4699]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-0.3774, 39.4698]);
   const [zoomLevel, setZoomLevel] = useState(14);
   const [displayZoomLevel, setDisplayZoomLevel] = useState(14);
   const [mapInitialized, setMapInitialized] = useState(false);
