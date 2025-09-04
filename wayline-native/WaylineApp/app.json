@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Wayline",
+    "slug": "Wayline",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#455C6E"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wayline.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "monochromeImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#455C6E"
+      },
+      "package": "com.wayline.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoiaXNpdHpvZSIsImEiOiJjbWVlMmxkZzEwaTFoMmpzZzR1eGMwcTltIn0.EpiQlLd0cut-8ghU1Pl0MQ",
+          "RNMapboxMapsVersion": "11.7.0"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Wayline to use your location."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Figtree-VariableFont_wght.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "extraProguardRules": "-keep public class com.horcrux.svg.** {*;}",
+            "allowBackup": false
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "fde8530e-78b6-45c6-a7dc-f49c8ba4453d"
+      }
+    }
+  }
+}

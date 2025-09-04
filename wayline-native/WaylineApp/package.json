@@ -1,0 +1,41 @@
+{
+  "name": "waylineapp",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@expo-google-fonts/figtree": "^0.4.0",
+    "@expo/metro-runtime": "~5.0.4",
+    "@gorhom/bottom-sheet": "^5.1.8",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@rnmapbox/maps": "^10.1.41",
+    "expo": "~53.0.20",
+    "expo-build-properties": "~0.14.8",
+    "expo-constants": "~17.1.7",
+    "expo-dev-client": "~5.2.4",
+    "expo-font": "~13.3.2",
+    "expo-location": "~18.1.6",
+    "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "^5.0.10",
+    "react": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-gesture-handler": "^2.28.0",
+    "react-native-reanimated": "^4.0.2",
+    "react-native-safe-area-context": "^5.6.0",
+    "react-native-screens": "^4.14.1",
+    "react-native-svg": "^15.11.2",
+    "react-native-svg-transformer": "^1.5.1",
+    "react-native-vector-icons": "^10.3.0",
+    "react-native-worklets": "^0.4.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}

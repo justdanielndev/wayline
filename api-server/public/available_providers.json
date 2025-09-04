@@ -1,0 +1,104 @@
+{
+  "providers": [
+    {
+      "onestop_id": "f-ezp8-emtvalencia",
+      "spec": "gtfs",
+      "name": "EMT Valencia",
+      "logo": "/providers/logos/emt.png",
+      "lines-corner-radius": 1000,
+      "lines-background-color": "#DF3B3BFF",
+      "lines-text-color": "#FFFFFF",
+      "lines-color": "#DF3B3BFF",
+      "showlines": false,
+      "api": "transitland",
+      "dbstored": false,
+      "type": "bus"
+    },
+    {
+      "onestop_id": "f-cercanías~renfe",
+      "spec": "gtfs",
+      "name": "Cercanías",
+      "showlines": false,
+      "long_line_names": true,
+      "logo": "/providers/logos/renfe.png",
+      "lines-color": "#E42727FF",
+      "lines-background-color": "#E42727FF",
+      "mergeable": {
+        "f-cercanías~renfe": true,
+        "f-renfe~media~larga~distancia~y~ave": true
+      },
+      "api": "transitland",
+      "enable-departures": false,
+      "departures-text": "Debido a la falta de datos públicos correctos por parte de Renfe, no se puede ofrecer información de salidas.",
+      "type": "train"
+    },
+    {
+      "onestop_id": "f-renfe~media~larga~distancia~y~ave",
+      "spec": "gtfs",
+      "name": "Renfe Media/Larga Distancia y AVE",
+      "showlines": false,
+      "long_line_names": true,
+      "logo": "/providers/logos/renfe.png",
+      "lines-color": "#74378AFF",
+      "lines-background-color": "#74378AFF",
+      "mergeable": {
+        "f-cercanías~renfe": true,
+        "f-renfe~media~larga~distancia~y~ave": true
+      },
+      "api": "transitland",
+      "type": "train",
+      "departures-text": "Debido a la falta de datos públicos correctos por parte de Renfe, no se puede ofrecer información de salidas."
+    },
+    {
+      "onestop_id": "f-gbwc-mobibreizh",
+      "spec": "gtfs",
+      "name": "BreizhGo",
+      "showlines": false,
+      "long_line_names": true,
+      "api": "transitland",
+      "type": "bus-train"
+    },
+    {
+      "onestop_id": "f-metro~de~valencia",
+      "spec": "gtfs",
+      "name": "Metrovalencia",
+      "showlines": true,
+      "logo": "/providers/logos/metrovalencia.png",
+      "lines-icons": {
+        "1": "/providers/lines/metrovalencia/1.png",
+        "2": "/providers/lines/metrovalencia/2.png",
+        "3": "/providers/lines/metrovalencia/3.png",
+        "4": "/providers/lines/metrovalencia/4.png",
+        "5": "/providers/lines/metrovalencia/5.png",
+        "6": "/providers/lines/metrovalencia/6.png",
+        "7": "/providers/lines/metrovalencia/7.png",
+        "8": "/providers/lines/metrovalencia/8.png",
+        "9": "/providers/lines/metrovalencia/9.png",
+        "10": "/providers/lines/metrovalencia/10.png"
+      },
+      "lines-colors": {
+        "1": "#FBBF24",
+        "2": "#B95C8CFF",
+        "3": "#CB4242FF",
+        "4": "#414A8EFF",
+        "5": "#4D9C67FF",
+        "6": "#7D499DFF",
+        "7": "#F59E0B",
+        "8": "#6DBBC2FF",
+        "9": "#614C3CFF",
+        "10": "#6EBB94FF"
+      },
+      "api": "transitland",
+      "type": "metro"
+    },
+    {
+      "onestop_id": "f-jcdecaux-valence",
+      "name": "Valenbisi",
+      "spec": "custom",
+      "logo": "/providers/logos/valenbisi.png",
+      "api": "jcdecaux",
+      "jcdecaux_contract": "valence",
+      "type": "bike"
+    }
+  ]
+}
