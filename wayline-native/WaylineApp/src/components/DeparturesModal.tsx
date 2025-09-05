@@ -664,9 +664,10 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                     )}
                   </View>
                   
-                  <ScrollView style={styles.directionsContainer}>
+                  <View style={styles.directionsContainer}>
                     <Text style={styles.directionsTitle}>Directions</Text>
-                    {selectedTrip.segments.map((segment, idx) => (
+                    {selectedTrip && selectedTrip.segments && selectedTrip.segments.length > 0 ? (
+                      selectedTrip.segments.map((segment, idx) => (
                       <View key={idx} style={styles.directionStep}>
                         <View style={styles.directionStepHeader}>
                           <View style={[
@@ -718,8 +719,11 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                           </View>
                         </View>
                       </View>
-                    ))}
-                  </ScrollView>
+                      ))
+                    ) : (
+                      <Text style={styles.noDirectionsText}>No directions available</Text>
+                    )}
+                  </View>
                 </View>
           ) : !showTripPlanning && loading ? (
             <View style={styles.loadingContainer}>
@@ -830,7 +834,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: SCREEN_HEIGHT * 0.8,
-    minHeight: 400,
+    minHeight: SCREEN_HEIGHT * 0.65,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,
@@ -1276,7 +1280,8 @@ const styles = StyleSheet.create({
     color: '#059669',
   },
   directionsContainer: {
-    flex: 1,
+    marginTop: 20,
+    paddingBottom: 20,
   },
   directionsTitle: {
     fontSize: 18,
@@ -1350,5 +1355,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Figtree_500Medium',
     color: '#374151',
     marginTop: 4,
+  },
+  noDirectionsText: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

@@ -193,6 +193,11 @@ class TripGoService {
     const results = [];
     const segmentMap = new Map<number, any>();
 
+    console.log('Processing routing response:', {
+      groupsCount: response.groups?.length,
+      segmentTemplatesCount: response.segmentTemplates?.length
+    });
+
     response.segmentTemplates?.forEach(template => {
       segmentMap.set(template.hashCode, template);
     });
@@ -201,8 +206,10 @@ class TripGoService {
       for (const trip of group.trips) {
         const segments: TripGoSegment[] = [];
 
+        console.log('Processing trip with segments:', trip.segments);
+
         for (const segmentRef of trip.segments) {
-          const hashCode = parseInt(segmentRef);
+          const hashCode = typeof segmentRef === 'string' ? parseInt(segmentRef) : segmentRef;
           const template = segmentMap.get(hashCode);
           
           if (template) {
@@ -213,14 +220,17 @@ class TripGoService {
               to: template.to,
               mode: template.modeIdentifier || template.mode || '',
               modeInfo: template.modeInfo,
-              action: template.action,
-              metres: template.metres,
+              action: template.action || template.instruction || 'Travel',
+              metres: template.metres || template.distance,
               duration: template.endTime - template.startTime,
-              visibility: template.visibility
+              visibility: template.visibility || 'in details'
             });
+          } else {
+            console.warn('No template found for segment:', segmentRef, 'hashCode:', hashCode);
           }
         }
 
+        console.log('Trip processed with', segments.length, 'segments');
         results.push({ trip, segments });
       }
     }
