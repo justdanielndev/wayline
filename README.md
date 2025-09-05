@@ -23,7 +23,7 @@ Currently implemented:
 
 - [x] Real-time departures
 
-- [x] Trips (in development)
+- [x] Trips V1
 
 Coming soon:
 
