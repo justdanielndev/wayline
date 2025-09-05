@@ -906,43 +906,17 @@ function MainApp() {
                 <TouchableOpacity
                 activeOpacity={0.9}
                 style={[
-                  styles.locationCard,
+                  styles.drawerHeaderCard,
                   {
                     flex: 1,
                   }
                 ]}
               >
-                <Animated.View
-                  style={{
-                    position: 'absolute',
-                    left: 20,
-                    top: '125%',
-                    marginTop: -10,
-                    opacity: searchIconOpacity,
-                  }}
-                >
-                  <Svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <Path
-                      d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
-                      stroke="#6B7280"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <Path
-                      d="M19 19L14.65 14.65"
-                      stroke="#6B7280"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
-                </Animated.View>
                 <Text style={[
                   styles.locationText,
                   styles.locationTextDrawer
                 ]}>
-                  Where do we start your trip?
+                  Nearby Stops
                 </Text>
               </TouchableOpacity>
               
@@ -1151,6 +1125,23 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#D4D5EBFF',
   },
+  drawerHeaderCard: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    flex: 1,
+    shadowColor: '#6F7081FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1.5,
+    borderColor: '#D4D5EBFF',
+  },
   locationText: {
     color: '#424349FF',
     fontSize: 15,
@@ -1163,6 +1154,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontFamily: 'Figtree_500Medium',
     width: '100%',
+    fontSize: 16,
   },
   locationButton: {
     width: 48,
