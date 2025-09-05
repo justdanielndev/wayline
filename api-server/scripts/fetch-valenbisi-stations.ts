@@ -13,7 +13,6 @@ interface ValenbisiStation {
 }
 
 export async function fetchAllValenbisiStations() {
-  console.log('Fetching all Valenbisi stations...');
   
   const allStations: any[] = [];
   let offset = 0;
@@ -64,13 +63,11 @@ export async function fetchAllValenbisiStations() {
         offset += limit;
       }
       
-      console.log(`Fetched ${allStations.length} Valenbisi stations so far...`);
     } catch (error) {
       console.error('Error fetching Valenbisi stations:', error);
       hasMore = false;
     }
   }
   
-  console.log(`Total Valenbisi stations fetched: ${allStations.length}`);
   return allStations;
 }

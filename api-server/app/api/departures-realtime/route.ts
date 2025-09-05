@@ -57,7 +57,6 @@ export async function GET(request: NextRequest) {
       }
       
       if (upcomingCount < 5) {
-        console.log(`Cache has only ${upcomingCount} upcoming departures, preserving past departures and refetching`);
         
         cachedPastDepartures = allCachedDepartures
           .map(dep => ({
@@ -68,7 +67,6 @@ export async function GET(request: NextRequest) {
           .sort((a, b) => b.minutes_from_now - a.minutes_from_now)
           .slice(0, 5);
         
-        console.log(`Preserved ${cachedPastDepartures.length} past departures from cache`);
         cache.delete(cacheKey);
       } else {
         return Response.json({
@@ -142,7 +140,6 @@ export async function GET(request: NextRequest) {
 
     {
       const TRANSITLAND_API_KEY = process.env.TRANSITLAND_API_KEY || '';
-      console.log(`Fetching TransitLand departures for ${feedOnestopId}:${stopId}`);
       
       let limit = 30;
       const response = await fetch(
@@ -156,20 +153,14 @@ export async function GET(request: NextRequest) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('TransitLand response structure:', JSON.stringify(data, null, 2).substring(0, 500));
         
         const stopData = data.stops?.[0];
         const rawDepartures = stopData?.departures || [];
-        console.log(`Found ${rawDepartures.length} departures from TransitLand`);
-        
         departures = transformDepartures(rawDepartures, feedOnestopId);
         
         const upcomingCount = departures.filter((d: any) => d.minutes_from_now >= 0).length;
-        console.log(`Found ${upcomingCount} upcoming departures`);
-        
         if (upcomingCount < 5) {
           limit = 60;
-          console.log(`Refetching with higher limit: ${limit}`);
           
           const refetchResponse = await fetch(
             `https://transit.land/api/v2/rest/stops/${feedOnestopId}:${stopId}/departures?limit=${limit}`,
@@ -183,18 +174,11 @@ export async function GET(request: NextRequest) {
           if (refetchResponse.ok) {
             const refetchData = await refetchResponse.json();
             const refetchStopData = refetchData.stops?.[0];
-            const refetchRawDepartures = refetchStopData?.departures || [];
-            console.log(`Refetch found ${refetchRawDepartures.length} departures from TransitLand`);
-            
+            const refetchRawDepartures = refetchStopData?.departures || [];            
             departures = transformDepartures(refetchRawDepartures, feedOnestopId);
           } else {
             console.error('TransitLand API refetch error:', refetchResponse.status, refetchResponse.statusText);
           }
-        }
-        
-        console.log(`Transformed ${departures.length} departures`);
-        if (departures.length > 0) {
-          console.log('Sample departure:', JSON.stringify(departures[0], null, 2));
         }
       } else {
         console.error('TransitLand API error:', response.status, response.statusText);

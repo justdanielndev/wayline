@@ -37,7 +37,7 @@ export interface TripGoTrip {
   progressURL?: string;
   plannedURL?: string;
   temporaryURL?: string;
-  segments: string[];
+  segments: any[];
 }
 
 export interface TripGoGroup {
@@ -180,7 +180,8 @@ class TripGoService {
       ...(options.bestOnly !== undefined && { bestOnly: options.bestOnly.toString() })
     });
 
-    return this.fetchTripGo(`/routing.json?${params}`);
+    const result = await this.fetchTripGo<TripGoRoutingResponse>(`/routing.json?${params}`);
+    return result;
   }
 
   /**
@@ -193,11 +194,6 @@ class TripGoService {
     const results = [];
     const segmentMap = new Map<number, any>();
 
-    console.log('Processing routing response:', {
-      groupsCount: response.groups?.length,
-      segmentTemplatesCount: response.segmentTemplates?.length
-    });
-
     response.segmentTemplates?.forEach(template => {
       segmentMap.set(template.hashCode, template);
     });
@@ -206,31 +202,113 @@ class TripGoService {
       for (const trip of group.trips) {
         const segments: TripGoSegment[] = [];
 
-        console.log('Processing trip with segments:', trip.segments);
-
-        for (const segmentRef of trip.segments) {
-          const hashCode = typeof segmentRef === 'string' ? parseInt(segmentRef) : segmentRef;
+        if (Array.isArray(trip.segments) && trip.segments.length > 0 && typeof trip.segments[0] === 'object') {
+          for (const segment of trip.segments) {
+            if ('startTime' in segment && 'endTime' in segment) {
+              const seg = segment as any;
+              let actionText = seg.action || seg.instruction || seg.notes || '';
+              
+              if (!actionText && seg.from && seg.to) {
+                const mode = seg.modeIdentifier || seg.mode || '';
+                if (mode.includes('walk')) {
+                  actionText = `Walk to ${seg.to.name || seg.to.address || 'destination'}`;
+                } else if (mode.includes('bus') || mode.includes('train')) {
+                  actionText = `Take ${seg.operator || 'transit'} to ${seg.to.name || 'destination'}`;
+                } else {
+                  actionText = `Travel to ${seg.to.name || 'destination'}`;
+                }
+              }
+              
+              const processedSegment: TripGoSegment = {
+                ...seg,
+                mode: seg.modeIdentifier || seg.mode || seg.type || '',
+                action: actionText || 'Travel',
+              };
+              segments.push(processedSegment);
+            }
+          }
+        } else if (trip.segments) {
+          for (const segmentRef of trip.segments) {
+          let hashCode: number;
+          if (typeof segmentRef === 'string') {
+            hashCode = parseInt(segmentRef, 10);
+            if (isNaN(hashCode)) {
+              console.warn('Invalid segment reference:', segmentRef);
+              continue;
+            }
+          } else if (typeof segmentRef === 'number') {
+            hashCode = segmentRef;
+          } else if (typeof segmentRef === 'object' && segmentRef !== null && 'hashCode' in segmentRef) {
+            hashCode = (segmentRef as any).hashCode;
+          } else {
+            console.warn('Unknown segment reference type:', segmentRef);
+            continue;
+          }
+          
           const template = segmentMap.get(hashCode);
           
           if (template) {
+            let actionText = template.action || template.instruction || template.notes || '';
+            
+            if (!actionText && template.serviceName) {
+              actionText = `Take ${template.serviceName}`;
+              if (template.serviceTripID) {
+                actionText += ` (${template.serviceTripID})`;
+              }
+              if (template.to && template.to.name) {
+                actionText += ` to ${template.to.name}`;
+              }
+            }
+            
+            if (!actionText && template.operator) {
+              const routeInfo = template.routeShortName || template.routeLongName || '';
+              if (routeInfo) {
+                actionText = `Take ${template.operator} ${routeInfo}`;
+              } else {
+                actionText = `Take ${template.operator}`;
+              }
+              if (template.to && template.to.name) {
+                actionText += ` to ${template.to.name}`;
+              }
+            }
+            
+            if (!actionText && template.from && template.to) {
+              const modeStr = (template.modeIdentifier || template.mode || template.type || '').toLowerCase();
+              if (modeStr.includes('walk')) {
+                actionText = `Walk from ${template.from.name || template.from.address || 'location'} to ${template.to.name || template.to.address || 'destination'}`;
+              } else if (modeStr.includes('bus') || modeStr.includes('train') || modeStr.includes('pt_pub')) {
+                actionText = `Take ${template.operator || 'public transport'} to ${template.to.name || 'destination'}`;
+              } else {
+                actionText = `Travel to ${template.to.name || 'destination'}`;
+              }
+            }
+            
+            if (!actionText && template.streets && template.streets.length > 0) {
+              const street = template.streets[0];
+              if (street.instruction) {
+                actionText = street.instruction;
+              } else if (street.name) {
+                actionText = `Walk along ${street.name}`;
+              }
+            }
+            
             segments.push({
-              startTime: template.startTime,
-              endTime: template.endTime,
-              from: template.from,
-              to: template.to,
-              mode: template.modeIdentifier || template.mode || '',
+              startTime: template.startTime || 0,
+              endTime: template.endTime || 0,
+              from: template.from || {},
+              to: template.to || {},
+              mode: template.modeIdentifier || template.mode || template.type || '',
               modeInfo: template.modeInfo,
-              action: template.action || template.instruction || 'Travel',
-              metres: template.metres || template.distance,
-              duration: template.endTime - template.startTime,
+              action: actionText || 'Travel',
+              metres: template.metres || template.distance || 0,
+              duration: (template.endTime || 0) - (template.startTime || 0),
               visibility: template.visibility || 'in details'
             });
           } else {
             console.warn('No template found for segment:', segmentRef, 'hashCode:', hashCode);
           }
+          }
         }
-
-        console.log('Trip processed with', segments.length, 'segments');
         results.push({ trip, segments });
       }
     }

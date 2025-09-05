@@ -265,7 +265,6 @@ export async function updateAllProviders() {
     }
     
     if (!provider.onestop_id) {
-      console.log('Skipping provider without onestop_id:', provider);
       continue;
     }
     
@@ -300,7 +299,6 @@ export async function updateAllProviders() {
       const lon = stop.geometry?.coordinates?.[0] || 0;
       
       if (!lat || !lon || lat === 0 || lon === 0) {
-        console.log(`Warning: Skipping stop ${stop.stop_id} - missing coordinates`);
         continue;
       }
       
@@ -389,10 +387,8 @@ export async function updateAllProviders() {
     }
 
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log(`Completed processing ${provider.onestop_id}\n`);
   }
 
-  console.log('All providers processed. Starting collection swap...');
   
   try {
     const db = mongoose.connection.db;

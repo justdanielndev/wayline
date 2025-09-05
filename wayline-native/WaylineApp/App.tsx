@@ -259,7 +259,6 @@ function MainApp() {
             address = data.display_name.split(',').slice(0, 2).join(', ');
           }
           
-          console.log('Nominatim address:', address, 'house_number:', addr.house_number);
           setCurrentAddress(address || 'Unknown location');
         }
       }
@@ -298,7 +297,6 @@ function MainApp() {
       });
       
       if (imagesToPreload.length > 0) {
-        console.log('Prefetching', imagesToPreload.length, 'images...');
         await Promise.all(
           imagesToPreload.map(uri => 
             Image.prefetch(uri).catch(err => 
@@ -306,7 +304,6 @@ function MainApp() {
             )
           )
         );
-        console.log('Image prefetching complete');
       }
     } catch (error) {
       console.error('Error loading providers:', error);

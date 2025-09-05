@@ -12,7 +12,6 @@ import {
   PanResponder,
   BackHandler,
   TextInput,
-  FlatList,
 } from 'react-native';
 import { Stop, DepartureResponse, Route } from '../types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -109,22 +108,26 @@ const formatDuration = (seconds: number) => {
 };
 
 const getModeIcon = (mode: string): any => {
-  if (mode.includes('walk')) return 'walk';
-  if (mode.includes('bus')) return 'bus';
-  if (mode.includes('train') || mode.includes('rail')) return 'train';
-  if (mode.includes('ferry')) return 'boat';
-  if (mode.includes('car')) return 'car';
-  if (mode.includes('bicycle')) return 'bicycle';
+  if (!mode) return 'navigate';
+  const modeStr = mode.toLowerCase();
+  if (modeStr.includes('walk')) return 'walk';
+  if (modeStr.includes('bus')) return 'bus';
+  if (modeStr.includes('train') || modeStr.includes('rail')) return 'train';
+  if (modeStr.includes('ferry')) return 'boat';
+  if (modeStr.includes('car')) return 'car';
+  if (modeStr.includes('bicycle')) return 'bicycle';
   return 'navigate';
 };
 
 const getModeColor = (mode: string): string => {
-  if (mode.includes('walk')) return '#4CAF50';
-  if (mode.includes('bus')) return '#2196F3';
-  if (mode.includes('train') || mode.includes('rail')) return '#9C27B0';
-  if (mode.includes('ferry')) return '#00BCD4';
-  if (mode.includes('car')) return '#607D8B';
-  if (mode.includes('bicycle')) return '#FF9800';
+  if (!mode) return '#757575';
+  const modeStr = mode.toLowerCase();
+  if (modeStr.includes('walk')) return '#4CAF50';
+  if (modeStr.includes('bus')) return '#2196F3';
+  if (modeStr.includes('train') || modeStr.includes('rail')) return '#9C27B0';
+  if (modeStr.includes('ferry')) return '#00BCD4';
+  if (modeStr.includes('car')) return '#607D8B';
+  if (modeStr.includes('bicycle')) return '#FF9800';
   return '#757575';
 };
 
@@ -457,7 +460,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                   resetTripPlanningState();
                 }}
               >
-                <Ionicons name="arrow-back" size={20} color="#007AFF" />
+                <Ionicons name="arrow-back" size={20} color="#8B7FC4" />
               </TouchableOpacity>
             )}
             {!showTripPlanning && (
@@ -489,11 +492,13 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
           style={styles.content} 
           showsVerticalScrollIndicator={false}
           scrollEnabled={!isDragging}
+          nestedScrollEnabled={false}
         >
           {showTripPlanning && !selectedTrip ? (
             <View style={styles.tripPlanningContent}>
-              <View style={styles.searchSection}>
-                <Text style={styles.searchTitle}>Where do you want to go?</Text>
+              {tripResults.length === 0 && (
+                <View style={styles.searchSection}>
+                  <Text style={styles.searchTitle}>Where do you want to go?</Text>
                 <View style={styles.searchInputContainer}>
                   <Ionicons name="search" size={20} color="#6B7280" />
                   <TextInput
@@ -507,12 +512,13 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                     autoFocus
                   />
                 </View>
-              </View>
+                </View>
+              )}
 
-              {selectedDestination && (
+              {selectedDestination && tripResults.length === 0 && (
                 <View style={styles.selectedDestination}>
                   <View style={styles.selectedDestinationInfo}>
-                    <Ionicons name="location" size={20} color="#007AFF" />
+                    <Ionicons name="location" size={20} color="#8B7FC4" />
                     <Text style={styles.selectedDestinationText}>
                       {selectedDestination.name}
                     </Text>
@@ -527,12 +533,10 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
               )}
 
               {isSearching ? (
-                <ActivityIndicator style={styles.searchLoader} size="small" color="#007AFF" />
-              ) : (
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item, index) => `${item.lat}-${item.lng}-${index}`}
-                  renderItem={({ item }) => (
+                <ActivityIndicator style={styles.searchLoader} size="small" color="#B8A9E6" />
+              ) : searchResults.length > 0 ? (
+                <View>
+                  {searchResults.map((item) => (
                     <TouchableOpacity
                       style={styles.searchResultItem}
                       onPress={() => {
@@ -555,13 +559,13 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                         )}
                       </View>
                     </TouchableOpacity>
-                  )}
-                />
-              )}
+                  ))}
+                </View>
+              ) : null}
 
               {planningTrip ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#007AFF" />
+                  <ActivityIndicator size="large" color="#B8A9E6" />
                   <Text style={styles.loadingText}>Planning your trip...</Text>
                 </View>
               ) : tripResults.length > 0 ? (
@@ -613,7 +617,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                                   />
                                 </View>
                                 <Text style={styles.segmentText} numberOfLines={1}>
-                                  {segment.action}
+                                  {segment.action || 'Travel'}
                                 </Text>
                                 {segment.duration && (
                                   <Text style={styles.segmentDuration}>
@@ -637,7 +641,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                       style={styles.backToTripsButton}
                       onPress={() => setSelectedTrip(null)}
                     >
-                      <Ionicons name="arrow-back" size={20} color="#007AFF" />
+                      <Ionicons name="arrow-back" size={20} color="#8B7FC4" />
                       <Text style={styles.backToTripsText}>Back to trips</Text>
                     </TouchableOpacity>
                   </View>
@@ -666,7 +670,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                   
                   <View style={styles.directionsContainer}>
                     <Text style={styles.directionsTitle}>Directions</Text>
-                    {selectedTrip && selectedTrip.segments && selectedTrip.segments.length > 0 ? (
+                    {selectedTrip.segments && selectedTrip.segments.length > 0 ? (
                       selectedTrip.segments.map((segment, idx) => (
                       <View key={idx} style={styles.directionStep}>
                         <View style={styles.directionStepHeader}>
@@ -681,7 +685,7 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                             />
                           </View>
                           <View style={styles.directionStepInfo}>
-                            <Text style={styles.directionAction}>{segment.action}</Text>
+                            <Text style={styles.directionAction}>{segment.action || 'No description'}</Text>
                             <View style={styles.directionTimesRow}>
                               <Text style={styles.directionTime}>
                                 {formatTime(segment.startTime)}
@@ -721,7 +725,10 @@ export const DeparturesModal: React.FC<DeparturesModalProps> = ({
                       </View>
                       ))
                     ) : (
-                      <Text style={styles.noDirectionsText}>No directions available</Text>
+                      <View style={styles.noDirectionsContainer}>
+                        <Text style={styles.noDirectionsText}>No directions available</Text>
+                        <Text style={styles.debugText}>Unable to load route details. Please try again.</Text>
+                      </View>
                     )}
                   </View>
                 </View>
@@ -866,13 +873,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backButton: {
-    backgroundColor: '#EBF8FF',
+    backgroundColor: '#E6E0F5',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   goButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8A9E6',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1077,7 +1084,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   selectedDestination: {
-    backgroundColor: '#EBF8FF',
+    backgroundColor: '#E6E0F5',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 20,
@@ -1099,7 +1106,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   planTripButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8A9E6',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -1239,7 +1246,7 @@ const styles = StyleSheet.create({
   backToTripsText: {
     fontSize: 16,
     fontFamily: 'Figtree_500Medium',
-    color: '#007AFF',
+    color: '#8B7FC4',
   },
   tripDetailsTitle: {
     fontSize: 20,
@@ -1362,5 +1369,15 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 20,
+  },
+  noDirectionsContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  debugText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_400Regular',
+    color: '#9CA3AF',
+    marginTop: 8,
   },
 });
