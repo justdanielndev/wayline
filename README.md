@@ -11,25 +11,25 @@ Wayline is a free, non-profit project that was created to be the replacement for
 
 Currently implemented:
 
-[x] Maps
+- [x] Maps
 
-[x] Location button for centering on user location
+- [x] Location button for centering on user location
 
-[x] Public transportation stops
+- [x] Public transportation stops
 
-[x] Public transportation lines
+- [x] Public transportation lines
 
-[x] Public transportation routes
+- [x] Public transportation routes
 
-[] Trips (in development)
+- [ ] Trips (in development)
 
 Coming soon:
 
-[] Walking, biking, Uber/rental routes
+- [ ] Walking, biking, Uber/rental routes
 
-[] Offline maps
+- [ ] Offline maps
 
-[] Intelligent features (check the section below for more info)
+- [ ] Intelligent features (check the section below for more info)
 
 ## Unique Features
 
