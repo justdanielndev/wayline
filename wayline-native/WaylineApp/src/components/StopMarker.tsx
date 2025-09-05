@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Stop, Route } from '../types';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.link';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://waylineapi.isitzoe.dev';
 
 interface StopMarkerProps {
   stop: Stop;

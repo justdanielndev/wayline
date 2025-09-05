@@ -20,7 +20,7 @@ import tripGoService from '../services/tripgo';
 import type { TripGoTrip, TripGoSegment } from '../services/tripgo';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.link';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://waylineapi.isitzoe.dev';
 
 interface DeparturesModalProps {
   stop: Stop | null;

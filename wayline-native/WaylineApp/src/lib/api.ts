@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.link';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://waylineapi.isitzoe.dev';
 
 export const API_ENDPOINTS = {
   stops: `${API_BASE_URL}/api/stops`,

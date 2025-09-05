@@ -21,9 +21,13 @@ Currently implemented:
 
 - [x] Public transportation routes
 
-- [ ] Trips (in development)
+- [x] Real-time departures
+
+- [x] Trips (in development)
 
 Coming soon:
+
+- [ ] Trips V2 (more reliable, better indications)
 
 - [ ] Walking, biking, Uber/rental routes
 

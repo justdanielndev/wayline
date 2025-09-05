@@ -32,7 +32,7 @@ import {
   Figtree_700Bold,
 } from '@expo-google-fonts/figtree';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://3000.pluraldan.link';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://waylineapi.isitzoe.dev';
 import { SplashScreen } from './src/components/SplashScreen';
 
 MapboxGL.setAccessToken('pk.eyJ1IjoiaXNpdHpvZSIsImEiOiJjbWU1Z2NkNWQwaXdoMmpzYW9lYWFtZTd3In0.kigZZwCbecxw-WET2cos-A');
